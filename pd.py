@@ -19,6 +19,7 @@
 ##
 
 import sigrokdecode as srd
+import struct
 
 '''
 OUTPUT_PYTHON format:
@@ -197,7 +198,7 @@ class Decoder(srd.Decoder):
             self.oldws = ws
 
     def save_data(self, ws, data0, data1, data2, data3):
-        self.fout[0+ws].write(data0)
-        self.fout[2+ws].write(data1)
-        self.fout[4+ws].write(data2)
-        self.fout[6+ws].write(data3)
+        self.fout[0+ws].write(struct.pack("H", data0))
+        self.fout[2+ws].write(struct.pack("H", data1))
+        self.fout[4+ws].write(struct.pack("H", data2))
+        self.fout[6+ws].write(struct.pack("H", data3))
