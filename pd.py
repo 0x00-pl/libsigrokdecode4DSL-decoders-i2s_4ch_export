@@ -115,8 +115,11 @@ class Decoder(srd.Decoder):
             (self.samplesreceived, self.wordlength, samplerate)
 
     def decode(self, ss, es, data):
-        if not self.samplerate:
-            raise SamplerateError('Cannot decode without samplerate.')
+        #if not self.samplerate:
+        #    raise SamplerateError('Cannot decode without samplerate.')
+        word_length = self.options['word_length']
+        dump_file = self.options['dump_file'] == 'yes'
+
         for self.samplenum, (sck, ws, sd0, sd1, sd2, sd3) in data:
             data.itercnt += 1
             # Ignore sample if the bit clock hasn't changed.
@@ -127,7 +130,7 @@ class Decoder(srd.Decoder):
             if sck == 0:   # Ignore the falling clock edge.
                 continue
 
-            if self.bitcount >= self.options['word_length']:
+            if self.bitcount >= word_length:
                 sd0,sd1,sd2,sd3 = 0,0,0,0;
 
             self.data_all[0] = (self.data_all[0] << 1) | sd0;
@@ -145,19 +148,19 @@ class Decoder(srd.Decoder):
 
                 self.samplesreceived += 1
 
-                idx = 0 if self.oldws else 1
-                c3 = 'L' if self.oldws else 'R'
+                #idx = 0 if self.oldws else 1
+                #c3 = 'L' if self.oldws else 'R'
+                #
+                #if self.options['word_length'] <= 16:
+                #    v = '%04x %04x %04x %04x' % tuple(self.data_all)
+                #else:
+                #    v = '%08x %08x %08x %08x' % tuple(self.data_all)
 
-                if self.options['word_length'] <= 16:
-                    v = '%04x %04x %04x %04x' % tuple(self.data_all)
-                else:
-                    v = '%08x %08x %08x %08x' % tuple(self.data_all)
-
-                self.putpb(['DATA', [c3, self.data_all]])
-                self.putb([idx, ['%s: %s' % (c3, v), c3]])
+                #self.putpb(['DATA', [c3, self.data_all]])
+                #self.putb([idx, ['%s: %s' % (c3, v), c3]])
                 #self.putbin([0, self.wav_sample(self.data)])
 
-                if self.options['dump_file'] == 'yes':
+                if dump_file:
                     self.save_data(self.oldws, *self.data_all)
 
             # Reset decoder state.
@@ -165,9 +168,6 @@ class Decoder(srd.Decoder):
             self.bitcount = 0
             self.ss_block = self.samplenum
 
-            # Save the first sample position.
-            if self.first_sample is None:
-                self.first_sample = self.samplenum
 
             self.oldws = ws
 
