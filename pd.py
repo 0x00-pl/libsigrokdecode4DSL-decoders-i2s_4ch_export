@@ -64,6 +64,7 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'word_length', 'desc': 'word length', 'default': 16, 'values': (12,16,20,24,32)},
+        {'id': 'dump_file', 'desc': 'dump file', 'default': 'no', 'values': ('yes', 'no')},
     )
 
     def __init__(self):
@@ -75,7 +76,6 @@ class Decoder(srd.Decoder):
         self.samplesreceived = 0
         self.first_sample = None
         self.ss_block = None
-        self.wordlength = -1
         self.wrote_wav_header = False
         self.fout = [open("ch0L.pcm", 'wb', 0),open("ch0R.pcm", 'wb', 0),
                      open("ch1L.pcm", 'wb', 0),open("ch1R.pcm", 'wb', 0),
@@ -114,33 +114,6 @@ class Decoder(srd.Decoder):
         return 'I²S: %d %d-bit samples received at %sHz' % \
             (self.samplesreceived, self.wordlength, samplerate)
 
-    def wav_header(self):
-        # Chunk descriptor
-        h  = b'RIFF'
-        h += b'\x24\x80\x00\x00' # Chunk size (2084)
-        h += b'WAVE'
-        # Fmt subchunk
-        h += b'fmt '
-        h += b'\x10\x00\x00\x00' # Subchunk size (16 bytes)
-        h += b'\x01\x00'         # Audio format (0x0001 == PCM)
-        h += b'\x02\x00'         # Number of channels (2)
-        h += b'\x80\x3e\x00\x00' # Samplerate (16000)
-        h += b'\x00\x7d\x00\x00' # Byterate (32000)
-        h += b'\x04\x00'         # Blockalign (4)
-        h += b'\x10\x00'         # Bits per sample (16)
-        # Data subchunk
-        h += b'data'
-        h += b'\xff\xff\x00\x00' # Subchunk size (65535 bytes) TODO
-        return h
-
-    def wav_sample(self, sample):
-        # TODO: This currently assumes U32 samples, and converts to S16.
-        s = sample >> 16
-        if s >= 0x8000:
-            s -= 0x10000
-        lo, hi = s & 0xff, (s >> 8) & 0xff
-        return bytes([lo, hi])
-
     def decode(self, ss, es, data):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
@@ -170,29 +143,22 @@ class Decoder(srd.Decoder):
             # Only submit the sample, if we received the beginning of it.
             if self.ss_block is not None:
 
-                if not self.wrote_wav_header:
-                    self.put(0, 0, self.out_binary, [0, self.wav_header()])
-                    self.wrote_wav_header = True
-
                 self.samplesreceived += 1
 
                 idx = 0 if self.oldws else 1
-                c1 = 'Left channel' if self.oldws else 'Right channel'
-                c2 = 'Left' if self.oldws else 'Right'
                 c3 = 'L' if self.oldws else 'R'
-                v = '%04x %04x %04x %04x' % tuple(self.data_all)
+
+                if self.options['word_length'] <= 16:
+                    v = '%04x %04x %04x %04x' % tuple(self.data_all)
+                else:
+                    v = '%08x %08x %08x %08x' % tuple(self.data_all)
+
                 self.putpb(['DATA', [c3, self.data_all]])
-                self.putb([idx, ['%s: %s' % (c1, v), '%s: %s' % (c2, v),
-                                 '%s: %s' % (c3, v), c3]])
+                self.putb([idx, ['%s: %s' % (c3, v), c3]])
                 #self.putbin([0, self.wav_sample(self.data)])
-                self.save_data(self.oldws, *self.data_all)
 
-                # Check that the data word was the correct length.
-                if self.wordlength != -1 and self.wordlength != self.bitcount:
-                    self.putb([2, ['Received %d-bit word, expected %d-bit '
-                                   'word' % (self.bitcount, self.wordlength)]])
-
-                self.wordlength = self.bitcount
+                if self.options['dump_file'] == 'yes':
+                    self.save_data(self.oldws, *self.data_all)
 
             # Reset decoder state.
             self.data_all = [0,0,0,0]
