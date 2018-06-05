@@ -208,21 +208,16 @@ class Decoder(srd.Decoder):
     def save_data(self, ws, data0, data1, data2, data3):
         if self.options['word_length'] == 12:
             pack_config_string = "H"
-            shift_config = 4
         elif self.options['word_length'] == 16:
             pack_config_string = "H"
-            shift_config = 0
         elif self.options['word_length'] == 20:
             pack_config_string = "I"
-            shift_config = 12
         elif self.options['word_length'] == 24:
             pack_config_string = "I"
-            shift_config = 8
         elif self.options['word_length'] == 32:
             pack_config_string = "I"
-            shift_config = 0
 
-        self.fout[0+ws].write(struct.pack(pack_config_string, data0<<shift_config))
-        self.fout[2+ws].write(struct.pack(pack_config_string, data1<<shift_config))
-        self.fout[4+ws].write(struct.pack(pack_config_string, data2<<shift_config))
-        self.fout[6+ws].write(struct.pack(pack_config_string, data3<<shift_config))
+        self.fout[0+ws].write(struct.pack(pack_config_string, data0))
+        self.fout[2+ws].write(struct.pack(pack_config_string, data1))
+        self.fout[4+ws].write(struct.pack(pack_config_string, data2))
+        self.fout[6+ws].write(struct.pack(pack_config_string, data3))
