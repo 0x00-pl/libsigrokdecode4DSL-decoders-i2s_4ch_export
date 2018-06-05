@@ -74,8 +74,10 @@ class Decoder(srd.Decoder):
         self.ss_block = None
         self.wordlength = -1
         self.wrote_wav_header = False
-        self.fout = [open("ch0L.pcm", 'wb'),open("ch0R.pcm", 'wb'),open("ch1L.pcm", 'wb'),open("ch1R.pcm", 'wb'),
-                     open("ch2L.pcm", 'wb'),open("ch2R.pcm", 'wb'),open("ch3L.pcm", 'wb'),open("ch3R.pcm", 'wb')]
+        self.fout = [open("ch0L.pcm", 'wb', 0),open("ch0R.pcm", 'wb', 0),
+                     open("ch1L.pcm", 'wb', 0),open("ch1R.pcm", 'wb', 0),
+                     open("ch2L.pcm", 'wb', 0),open("ch2R.pcm", 'wb', 0),
+                     open("ch3L.pcm", 'wb', 0),open("ch3R.pcm", 'wb', 0)]
 
     def start(self):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
