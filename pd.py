@@ -63,7 +63,7 @@ class Decoder(srd.Decoder):
         ('wav', 'WAV file'),
     )
     options = (
-        {'id': 'word_length', 'desc': 'word length', 'default': 16, 'values': (12,16,20,24.32)},
+        {'id': 'word_length', 'desc': 'word length', 'default': 16, 'values': (12,16,20,24,32)},
     )
 
     def __init__(self):
