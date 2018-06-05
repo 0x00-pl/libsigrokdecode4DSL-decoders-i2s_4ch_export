@@ -62,6 +62,9 @@ class Decoder(srd.Decoder):
     binary = (
         ('wav', 'WAV file'),
     )
+    options = (
+        {'id': 'word_length', 'desc': 'word length', 'default': 16, 'values': (12,16,20,24.32)},
+    )
 
     def __init__(self):
         self.samplerate = None
@@ -151,6 +154,9 @@ class Decoder(srd.Decoder):
             if sck == 0:   # Ignore the falling clock edge.
                 continue
 
+            if self.bitcount >= self.options['word_length']:
+                sd0,sd1,sd2,sd3 = 0,0,0,0;
+
             self.data_all[0] = (self.data_all[0] << 1) | sd0;
             self.data_all[1] = (self.data_all[1] << 1) | sd1;
             self.data_all[2] = (self.data_all[2] << 1) | sd2;
@@ -200,7 +206,23 @@ class Decoder(srd.Decoder):
             self.oldws = ws
 
     def save_data(self, ws, data0, data1, data2, data3):
-        self.fout[0+ws].write(struct.pack("H", data0))
-        self.fout[2+ws].write(struct.pack("H", data1))
-        self.fout[4+ws].write(struct.pack("H", data2))
-        self.fout[6+ws].write(struct.pack("H", data3))
+        if self.options['word_length'] == 12:
+            pack_config_string = "H"
+            shift_config = 4
+        elif self.options['word_length'] == 16:
+            pack_config_string = "H"
+            shift_config = 0
+        elif self.options['word_length'] == 20:
+            pack_config_string = "I"
+            shift_config = 12
+        elif self.options['word_length'] == 24:
+            pack_config_string = "I"
+            shift_config = 8
+        elif self.options['word_length'] == 32:
+            pack_config_string = "I"
+            shift_config = 0
+
+        self.fout[0+ws].write(struct.pack(pack_config_string, data0<<shift_config))
+        self.fout[2+ws].write(struct.pack(pack_config_string, data1<<shift_config))
+        self.fout[4+ws].write(struct.pack(pack_config_string, data2<<shift_config))
+        self.fout[6+ws].write(struct.pack(pack_config_string, data3<<shift_config))
